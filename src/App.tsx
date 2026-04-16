@@ -4,6 +4,7 @@ import { FingeringPage } from "./pages/FingeringPage";
 import { PianoPage } from "./pages/PianoPage";
 import { MetronomePage } from "./pages/MetronomePage";
 import { EarTrainingPage } from "./pages/EarTrainingPage";
+import { ScalePracticePage } from "./pages/ScalePracticePage";
 import { MetronomeWidget } from "./components/MetronomeWidget";
 import { useMetronome } from "./hooks/useMetronome";
 
@@ -81,13 +82,6 @@ const NAV_ITEMS = [
   },
 ];
 
-function Placeholder({ name }: { name: string }) {
-  return (
-    <div className="flex items-center justify-center h-full">
-      <p className="text-text-muted text-lg">{name} — coming soon</p>
-    </div>
-  );
-}
 
 function AppShell() {
   const metronome = useMetronome();
@@ -141,7 +135,7 @@ function AppShell() {
           <Route path="/piano" element={<PianoPage />} />
           <Route path="/ear-training" element={<EarTrainingPage />} />
           <Route path="/metronome" element={<MetronomePage />} />
-          <Route path="/scales" element={<Placeholder name="Scale Practice" />} />
+          <Route path="/scales" element={<ScalePracticePage />} />
         </Routes>
       </main>
     </div>

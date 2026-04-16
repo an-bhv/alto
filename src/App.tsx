@@ -1,5 +1,6 @@
 import { BrowserRouter, Routes, Route, NavLink } from "react-router";
 import { TunerPage } from "./pages/TunerPage";
+import { FingeringPage } from "./pages/FingeringPage";
 
 const NAV_ITEMS = [
   {
@@ -122,7 +123,7 @@ export default function App() {
         <main className="flex-1 overflow-auto">
           <Routes>
             <Route path="/" element={<TunerPage />} />
-            <Route path="/fingerings" element={<Placeholder name="Fingering Chart" />} />
+            <Route path="/fingerings" element={<FingeringPage />} />
             <Route path="/piano" element={<Placeholder name="Piano" />} />
             <Route path="/ear-training" element={<Placeholder name="Ear Training" />} />
             <Route path="/metronome" element={<Placeholder name="Metronome" />} />

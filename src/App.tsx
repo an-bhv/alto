@@ -3,6 +3,7 @@ import { TunerPage } from "./pages/TunerPage";
 import { FingeringPage } from "./pages/FingeringPage";
 import { PianoPage } from "./pages/PianoPage";
 import { MetronomePage } from "./pages/MetronomePage";
+import { EarTrainingPage } from "./pages/EarTrainingPage";
 import { MetronomeWidget } from "./components/MetronomeWidget";
 import { useMetronome } from "./hooks/useMetronome";
 
@@ -138,7 +139,7 @@ function AppShell() {
           <Route path="/" element={<TunerPage />} />
           <Route path="/fingerings" element={<FingeringPage />} />
           <Route path="/piano" element={<PianoPage />} />
-          <Route path="/ear-training" element={<Placeholder name="Ear Training" />} />
+          <Route path="/ear-training" element={<EarTrainingPage />} />
           <Route path="/metronome" element={<MetronomePage />} />
           <Route path="/scales" element={<Placeholder name="Scale Practice" />} />
         </Routes>

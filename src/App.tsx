@@ -2,6 +2,9 @@ import { BrowserRouter, Routes, Route, NavLink } from "react-router";
 import { TunerPage } from "./pages/TunerPage";
 import { FingeringPage } from "./pages/FingeringPage";
 import { PianoPage } from "./pages/PianoPage";
+import { MetronomePage } from "./pages/MetronomePage";
+import { MetronomeWidget } from "./components/MetronomeWidget";
+import { useMetronome } from "./hooks/useMetronome";
 
 const NAV_ITEMS = [
   {
@@ -85,53 +88,69 @@ function Placeholder({ name }: { name: string }) {
   );
 }
 
+function AppShell() {
+  const metronome = useMetronome();
+
+  return (
+    <div className="flex h-screen bg-bg-primary text-text-primary overflow-hidden">
+      {/* Sidebar */}
+      <nav className="w-16 bg-bg-secondary border-r border-border flex flex-col items-center py-4 gap-1 shrink-0">
+        {/* Logo */}
+        <div className="mb-3">
+          <svg xmlns="http://www.w3.org/2000/svg" className="w-7 h-7 text-accent-blue" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+            <path d="M9 3v9a3 3 0 1 0 6 0V3" />
+            <path d="M6 3h12" />
+          </svg>
+        </div>
+
+        <div className="w-8 border-t border-border mb-1" />
+
+        {NAV_ITEMS.map(({ to, end, label, icon }) => (
+          <NavLink
+            key={to}
+            to={to}
+            end={end}
+            title={label}
+            className={({ isActive }) =>
+              [
+                "w-10 h-10 rounded-lg flex items-center justify-center transition-colors",
+                isActive
+                  ? "bg-accent-blue text-white"
+                  : "text-text-muted hover:bg-bg-elevated hover:text-text-primary",
+              ].join(" ")
+            }
+          >
+            {icon}
+          </NavLink>
+        ))}
+
+        {/* Metronome widget — always visible at bottom of sidebar */}
+        <MetronomeWidget
+          state={metronome.state}
+          onToggle={metronome.toggle}
+          onTap={metronome.tapTempo}
+        />
+      </nav>
+
+      {/* Main content */}
+      <main className="flex-1 overflow-auto">
+        <Routes>
+          <Route path="/" element={<TunerPage />} />
+          <Route path="/fingerings" element={<FingeringPage />} />
+          <Route path="/piano" element={<PianoPage />} />
+          <Route path="/ear-training" element={<Placeholder name="Ear Training" />} />
+          <Route path="/metronome" element={<MetronomePage />} />
+          <Route path="/scales" element={<Placeholder name="Scale Practice" />} />
+        </Routes>
+      </main>
+    </div>
+  );
+}
+
 export default function App() {
   return (
     <BrowserRouter>
-      <div className="flex h-screen bg-bg-primary text-text-primary overflow-hidden">
-        {/* Sidebar */}
-        <nav className="w-16 bg-bg-secondary border-r border-border flex flex-col items-center py-4 gap-1 shrink-0">
-          <div className="mb-3">
-            <svg xmlns="http://www.w3.org/2000/svg" className="w-7 h-7 text-accent-blue" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-              <path d="M9 3v9a3 3 0 1 0 6 0V3" />
-              <path d="M6 3h12" />
-            </svg>
-          </div>
-
-          <div className="w-8 border-t border-border mb-1" />
-
-          {NAV_ITEMS.map(({ to, end, label, icon }) => (
-            <NavLink
-              key={to}
-              to={to}
-              end={end}
-              title={label}
-              className={({ isActive }) =>
-                [
-                  "w-10 h-10 rounded-lg flex items-center justify-center transition-colors",
-                  isActive
-                    ? "bg-accent-blue text-white"
-                    : "text-text-muted hover:bg-bg-elevated hover:text-text-primary",
-                ].join(" ")
-              }
-            >
-              {icon}
-            </NavLink>
-          ))}
-        </nav>
-
-        {/* Main content */}
-        <main className="flex-1 overflow-auto">
-          <Routes>
-            <Route path="/" element={<TunerPage />} />
-            <Route path="/fingerings" element={<FingeringPage />} />
-            <Route path="/piano" element={<PianoPage />} />
-            <Route path="/ear-training" element={<Placeholder name="Ear Training" />} />
-            <Route path="/metronome" element={<Placeholder name="Metronome" />} />
-            <Route path="/scales" element={<Placeholder name="Scale Practice" />} />
-          </Routes>
-        </main>
-      </div>
+      <AppShell />
     </BrowserRouter>
   );
 }

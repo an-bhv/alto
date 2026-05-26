@@ -86,7 +86,7 @@ export function PianoPage() {
       <div className="flex justify-center">
         <Piano
           startMidi={48}
-          endMidi={72}
+          endMidi={83}
           activeNotes={activeNotes}
           scaleHighlight={scaleHighlight}
           onNoteOn={noteOn}
@@ -124,11 +124,11 @@ export function PianoPage() {
 
       {/* Keyboard guide */}
       <div className="text-xs text-text-muted mt-auto leading-relaxed">
-        <span className="text-text-secondary">Lower (C3–B3):</span>{" "}
-        white — Z X C V B N M &nbsp;·&nbsp; black — S D G H J
+        <span className="text-text-secondary">Top row (C3–E4, middle C = I):</span>{" "}
+        white — Q W E R T Y U I O P &nbsp;·&nbsp; black — 2 3 5 6 7 9 0
         &nbsp;&nbsp;
-        <span className="text-text-secondary">Upper (C4–C5):</span>{" "}
-        white — Q W E R T Y U I &nbsp;·&nbsp; black — 2 3 5 6 7
+        <span className="text-text-secondary">Bottom row (F4–A5):</span>{" "}
+        white — Z X C V B N M , . / &nbsp;·&nbsp; black — S D F H J L ; '
       </div>
     </div>
   );

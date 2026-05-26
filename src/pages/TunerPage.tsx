@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { usePitchDetection } from "../hooks/usePitchDetection";
 import { NoteDisplay } from "../components/NoteDisplay";
 import { CentsMeter } from "../components/CentsMeter";
@@ -16,12 +17,21 @@ function InTuneLabel({ cents }: { cents: number | null }) {
 export function TunerPage() {
   const { pitchData, isListening, startListening, stopListening, history } =
     usePitchDetection();
+  const [micError, setMicError] = useState<string | null>(null);
 
   async function handleToggle() {
-    if (isListening) stopListening();
-    else await startListening().catch((err: unknown) => {
-      console.error("Microphone access denied:", err);
-    });
+    if (isListening) {
+      stopListening();
+      return;
+    }
+    setMicError(null);
+    try {
+      await startListening();
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : String(err);
+      console.error("Microphone access failed:", err);
+      setMicError(msg);
+    }
   }
 
   const cents = pitchData?.concertNote.cents ?? null;
@@ -65,6 +75,12 @@ export function TunerPage() {
         <p className="text-xs text-text-muted">
           {isListening ? "Listening — play a note!" : "Press the button and allow microphone access"}
         </p>
+
+        {micError && (
+          <p className="text-xs text-accent-red max-w-sm text-center">
+            Mic error: {micError}
+          </p>
+        )}
 
         <p className="text-xs text-text-muted">Reference: A4 = 440 Hz</p>
       </div>

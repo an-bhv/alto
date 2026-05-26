@@ -1,7 +1,7 @@
-import { useRef } from "react";
+import { KEYBOARD_TO_MIDI } from "../data/keyboardMapping";
 
 export interface ScaleHighlight {
-  root: number;     // root MIDI pitch class (0–11)
+  root: number;
   intervals: number[];
   degreeNames: string[];
 }
@@ -14,37 +14,21 @@ interface PianoProps {
   onNoteOn?: (midi: number) => void;
   onNoteOff?: (midi: number) => void;
   showKeyboardLabels?: boolean;
+  showNoteNames?: boolean;
 }
 
-const WHITE_W = 40;
-const BLACK_W = 26;
-const WHITE_H = 150;
-const BLACK_H = 96;
+const WHITE_W = 36;
+const WHITE_H = 180;
+const BLACK_W = 22;
+const BLACK_H = 113;
+const TOP_BAR_H = 5;
+const BOTTOM_ROOM = 18;
 
-// X offset for black keys (in units of white key width)
 const BLACK_OFFSET = [-1, 0.67, -1, 1.67, -1, -1, 3.63, -1, 4.63, -1, 5.63, -1];
+const NOTE_NAMES = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
 
-const KB_LABELS: Record<number, string> = {
-  48: "Z", 49: "S", 50: "X", 51: "D", 52: "C", 53: "V", 54: "G",
-  55: "B", 56: "H", 57: "N", 58: "J", 59: "M",
-  60: "Q", 61: "2", 62: "W", 63: "3", 64: "E", 65: "R", 66: "5",
-  67: "T", 68: "6", 69: "Y", 70: "7", 71: "U", 72: "I",
-};
-
-const NOTE_NAMES = ["C","C#","D","D#","E","F","F#","G","G#","A","A#","B"];
-
-function isBlack(midi: number) {
+function isBlack(midi: number): boolean {
   return [1, 3, 6, 8, 10].includes(midi % 12);
-}
-
-function buildKeys(startMidi: number, endMidi: number) {
-  const whites: number[] = [];
-  const blacks: number[] = [];
-  for (let m = startMidi; m <= endMidi; m++) {
-    if (isBlack(m)) blacks.push(m);
-    else whites.push(m);
-  }
-  return { whites, blacks };
 }
 
 function whiteIndexOf(midi: number, startMidi: number): number {
@@ -55,6 +39,14 @@ function whiteIndexOf(midi: number, startMidi: number): number {
   return count;
 }
 
+const MIDI_TO_KB: Record<number, string> = (() => {
+  const out: Record<number, string> = {};
+  for (const [k, m] of Object.entries(KEYBOARD_TO_MIDI)) {
+    out[m] = k.toUpperCase();
+  }
+  return out;
+})();
+
 export function Piano({
   startMidi = 48,
   endMidi = 72,
@@ -63,11 +55,17 @@ export function Piano({
   onNoteOn,
   onNoteOff,
   showKeyboardLabels = true,
+  showNoteNames = false,
 }: PianoProps) {
-  const { whites, blacks } = buildKeys(startMidi, endMidi);
-  const totalWidth = whites.length * WHITE_W;
-  const svgHeight = WHITE_H + 4;
-  const touchActive = useRef(new Map<number, number>()); // touchId → midi
+  const whites: number[] = [];
+  const blacks: number[] = [];
+  for (let m = startMidi; m <= endMidi; m++) {
+    if (isBlack(m)) blacks.push(m);
+    else whites.push(m);
+  }
+
+  const keyboardWidth = whites.length * WHITE_W;
+  const svgHeight = TOP_BAR_H + WHITE_H + BOTTOM_ROOM;
 
   function scaleClass(midi: number): "root" | "note" | null {
     if (!scaleHighlight) return null;
@@ -91,99 +89,235 @@ export function Piano({
     return `${NOTE_NAMES[pc]}${oct}`;
   }
 
-  function keyFill(midi: number, white: boolean): string {
-    if (activeNotes.has(midi)) return white ? "#4a90d9" : "#2471a3";
-    const sc = scaleClass(midi);
-    if (sc === "root") return white ? "#2ecc71" : "#1a8c3a";
-    if (sc === "note") return white ? "#a9cce3" : "#1a4f6e";
-    return white ? "#e8e8e8" : "#222";
+  function whiteFill(active: boolean, sc: "root" | "note" | null): string {
+    if (active) return "url(#pk-white-active)";
+    if (sc === "root") return "url(#pk-white-root)";
+    if (sc === "note") return "url(#pk-white-scale)";
+    return "url(#pk-white)";
   }
 
-  function textColor(midi: number, white: boolean): string {
-    if (activeNotes.has(midi)) return "#fff";
-    const sc = scaleClass(midi);
-    if (sc === "root") return "#fff";
-    if (sc === "note") return white ? "#1a4f6e" : "#a9cce3";
-    return white ? "#999" : "#666";
+  function blackFill(active: boolean, sc: "root" | "note" | null): string {
+    if (active) return "url(#pk-black-active)";
+    if (sc === "root") return "url(#pk-black-root)";
+    if (sc === "note") return "url(#pk-black-scale)";
+    return "url(#pk-black)";
   }
+
+  const middleC = 60 >= startMidi && 60 <= endMidi && !isBlack(60) ? 60 : null;
 
   return (
-    <div className="overflow-x-auto select-none">
+    <div className="select-none" style={{ overflowX: "auto" }}>
       <svg
-        width={totalWidth}
+        width={keyboardWidth}
         height={svgHeight}
         style={{ display: "block", cursor: "pointer" }}
       >
-        {/* White keys */}
+        <defs>
+          <linearGradient id="pk-white" x1="0" x2="0" y1="0" y2="1">
+            <stop offset="0%" stopColor="#fdfdfd" />
+            <stop offset="85%" stopColor="#f4f4f4" />
+            <stop offset="100%" stopColor="#d4d4d4" />
+          </linearGradient>
+          <linearGradient id="pk-white-active" x1="0" x2="0" y1="0" y2="1">
+            <stop offset="0%" stopColor="#6aa9ff" />
+            <stop offset="100%" stopColor="#3d7bc8" />
+          </linearGradient>
+          <linearGradient id="pk-white-root" x1="0" x2="0" y1="0" y2="1">
+            <stop offset="0%" stopColor="#5ad681" />
+            <stop offset="100%" stopColor="#2b8c4e" />
+          </linearGradient>
+          <linearGradient id="pk-white-scale" x1="0" x2="0" y1="0" y2="1">
+            <stop offset="0%" stopColor="#d2e3f1" />
+            <stop offset="100%" stopColor="#a9c6dd" />
+          </linearGradient>
+
+          <linearGradient id="pk-black" x1="0" x2="0" y1="0" y2="1">
+            <stop offset="0%" stopColor="#5a5a5a" />
+            <stop offset="8%" stopColor="#2a2a2a" />
+            <stop offset="85%" stopColor="#0f0f0f" />
+            <stop offset="92%" stopColor="#2d2d2d" />
+            <stop offset="100%" stopColor="#050505" />
+          </linearGradient>
+          <linearGradient id="pk-black-active" x1="0" x2="0" y1="0" y2="1">
+            <stop offset="0%" stopColor="#4f93dc" />
+            <stop offset="100%" stopColor="#1e4b80" />
+          </linearGradient>
+          <linearGradient id="pk-black-root" x1="0" x2="0" y1="0" y2="1">
+            <stop offset="0%" stopColor="#3aa35c" />
+            <stop offset="100%" stopColor="#155226" />
+          </linearGradient>
+          <linearGradient id="pk-black-scale" x1="0" x2="0" y1="0" y2="1">
+            <stop offset="0%" stopColor="#2f485e" />
+            <stop offset="100%" stopColor="#152331" />
+          </linearGradient>
+        </defs>
+
+        <rect x={0} y={0} width={keyboardWidth} height={TOP_BAR_H} fill="#c62828" />
+
         {whites.map((midi) => {
           const wi = whiteIndexOf(midi, startMidi);
           const x = wi * WHITE_W;
-          const fill = keyFill(midi, true);
-          const tc = textColor(midi, true);
+          const y = TOP_BAR_H;
+          const sc = scaleClass(midi);
+          const active = activeNotes.has(midi);
           const deg = degreeName(midi);
-          const kb = KB_LABELS[midi];
+          const kb = MIDI_TO_KB[midi];
+          const onColored = active || sc === "root";
 
           return (
-            <g key={midi}
+            <g
+              key={midi}
               onMouseDown={(e) => { e.preventDefault(); onNoteOn?.(midi); }}
               onMouseUp={() => onNoteOff?.(midi)}
               onMouseLeave={(e) => { if (e.buttons & 1) onNoteOff?.(midi); }}
               onTouchStart={(e) => { e.preventDefault(); onNoteOn?.(midi); }}
               onTouchEnd={(e) => { e.preventDefault(); onNoteOff?.(midi); }}
             >
-              <rect x={x + 0.5} y={0.5} width={WHITE_W - 1} height={WHITE_H - 1} rx={3}
-                fill={fill} stroke="#bbb" strokeWidth={0.8} />
-              {/* Degree badge */}
+              <rect
+                x={x + 0.5}
+                y={y}
+                width={WHITE_W - 1}
+                height={WHITE_H}
+                rx={3}
+                fill={whiteFill(active, sc)}
+                stroke="#b2b2b2"
+                strokeWidth={0.8}
+              />
               {deg && (
-                <text x={x + WHITE_W / 2} y={16} textAnchor="middle" fontSize={9}
-                  fontWeight={700} fill={tc}>{deg}</text>
+                <text
+                  x={x + WHITE_W / 2}
+                  y={y + 16}
+                  textAnchor="middle"
+                  fontSize={10}
+                  fontWeight={700}
+                  fill={onColored ? "#fff" : "#1a4f6e"}
+                >
+                  {deg}
+                </text>
               )}
-              {/* Note name at bottom */}
-              <text x={x + WHITE_W / 2} y={WHITE_H - 20} textAnchor="middle"
-                fontSize={8} fill={tc}>{noteLabel(midi)}</text>
-              {/* Keyboard shortcut */}
+              {showNoteNames && (
+                <text
+                  x={x + WHITE_W / 2}
+                  y={y + WHITE_H - 30}
+                  textAnchor="middle"
+                  fontSize={8}
+                  fill={onColored ? "#eaf2fb" : "#999"}
+                >
+                  {noteLabel(midi)}
+                </text>
+              )}
               {showKeyboardLabels && kb && (
-                <text x={x + WHITE_W / 2} y={WHITE_H - 8} textAnchor="middle"
-                  fontSize={8} fontWeight={600} fill={tc}>{kb}</text>
+                <g transform={`translate(${x + WHITE_W / 2}, ${y + WHITE_H - 16})`}>
+                  <rect
+                    x={-10}
+                    y={-8}
+                    width={20}
+                    height={16}
+                    rx={3}
+                    fill="#e8e8e8"
+                    stroke="#9e9e9e"
+                    strokeWidth={0.6}
+                  />
+                  <text
+                    y={3}
+                    textAnchor="middle"
+                    fontSize={10}
+                    fontWeight={600}
+                    fill="#333"
+                  >
+                    {kb}
+                  </text>
+                </g>
               )}
             </g>
           );
         })}
 
-        {/* Black keys (on top) */}
         {blacks.map((midi) => {
           const pc = midi % 12;
-          const octaveStart = midi - pc; // C of this octave
-          const octaveWhites = whiteIndexOf(octaveStart, startMidi);
-          const x = (octaveWhites + BLACK_OFFSET[pc]) * WHITE_W - BLACK_W / 2;
-          const fill = keyFill(midi, false);
-          const tc = textColor(midi, false);
+          const octaveC = midi - pc;
+          const octaveWhiteStart = whiteIndexOf(octaveC, startMidi);
+          const x = (octaveWhiteStart + BLACK_OFFSET[pc]) * WHITE_W - BLACK_W / 2;
+          const y = TOP_BAR_H;
+          const sc = scaleClass(midi);
+          const active = activeNotes.has(midi);
           const deg = degreeName(midi);
-          const kb = KB_LABELS[midi];
+          const kb = MIDI_TO_KB[midi];
 
           return (
-            <g key={midi}
+            <g
+              key={midi}
               onMouseDown={(e) => { e.preventDefault(); onNoteOn?.(midi); }}
               onMouseUp={() => onNoteOff?.(midi)}
               onMouseLeave={(e) => { if (e.buttons & 1) onNoteOff?.(midi); }}
               onTouchStart={(e) => { e.preventDefault(); onNoteOn?.(midi); }}
               onTouchEnd={(e) => { e.preventDefault(); onNoteOff?.(midi); }}
             >
-              <rect x={x + 0.5} y={0.5} width={BLACK_W - 1} height={BLACK_H - 1} rx={3}
-                fill={fill} stroke="#000" strokeWidth={0.8} />
+              <rect
+                x={x + 1}
+                y={y + BLACK_H - 3}
+                width={BLACK_W}
+                height={5}
+                rx={2}
+                fill="#000"
+                opacity={0.35}
+              />
+              <rect
+                x={x}
+                y={y}
+                width={BLACK_W}
+                height={BLACK_H}
+                rx={3}
+                fill={blackFill(active, sc)}
+                stroke="#000"
+                strokeWidth={0.6}
+              />
               {deg && (
-                <text x={x + BLACK_W / 2} y={16} textAnchor="middle" fontSize={8}
-                  fontWeight={700} fill={tc}>{deg}</text>
+                <text
+                  x={x + BLACK_W / 2}
+                  y={y + 14}
+                  textAnchor="middle"
+                  fontSize={9}
+                  fontWeight={700}
+                  fill="#fff"
+                >
+                  {deg}
+                </text>
               )}
               {showKeyboardLabels && kb && (
-                <text x={x + BLACK_W / 2} y={BLACK_H - 8} textAnchor="middle"
-                  fontSize={7} fontWeight={600} fill={tc}>{kb}</text>
+                <g transform={`translate(${x + BLACK_W / 2}, ${y + BLACK_H - 14})`}>
+                  <rect
+                    x={-8}
+                    y={-7}
+                    width={16}
+                    height={14}
+                    rx={3}
+                    fill="#3a3a3a"
+                    stroke="#555"
+                    strokeWidth={0.5}
+                  />
+                  <text
+                    y={3}
+                    textAnchor="middle"
+                    fontSize={9}
+                    fontWeight={600}
+                    fill="#e8e8e8"
+                  >
+                    {kb}
+                  </text>
+                </g>
               )}
             </g>
           );
         })}
+
+        {middleC !== null && (() => {
+          const wi = whiteIndexOf(middleC, startMidi);
+          const cx = wi * WHITE_W + WHITE_W / 2;
+          const cy = TOP_BAR_H + WHITE_H + 8;
+          return <circle cx={cx} cy={cy} r={3.2} fill="#c62828" />;
+        })()}
       </svg>
-      <div ref={(_el) => { touchActive.current; }} />
     </div>
   );
 }
